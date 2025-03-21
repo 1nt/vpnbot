@@ -47,6 +47,7 @@ async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             status = response.get("status", "неизвестно")
             expire = response.get("expire", 0)
             expire_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expire)) if expire else "не установлено"
+            current_time = time.time()
             
             info_text = f"Ваш VPN аккаунт:\n"
             info_text += f"Логин: {username}\n"
@@ -62,8 +63,18 @@ async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 info_text += "📱 Streisand:\n"
                 info_text += f"{response['subscription_links']['streisand']}\n\n"
                 
-            
-            await update.message.reply_text(info_text)
+                # Check if subscription is expired or about to expire (within 24 hours)
+                if expire and expire < current_time + 86400:  # 86400 seconds = 24 hours
+                    keyboard = [
+                        [InlineKeyboardButton("💳 Оплатить", url=response['subscription_links']['payment_url'])],
+                        [InlineKeyboardButton("✅ Я оплатил", callback_data=f"payment_confirmed_{update.effective_user.username}")]
+                    ]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    info_text += "⚠️ Ваша подписка истекает или уже истекла!\n"
+                    info_text += "Нажмите 'Оплатить' для продления или 'Я оплатил' после оплаты.\n\n"
+                    await update.message.reply_text(info_text, reply_markup=reply_markup)
+                else:
+                    await update.message.reply_text(info_text)
         else:
             await request_trial(update, context)
             
@@ -154,12 +165,42 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         username = query.data.split("_")[2]
         current_time = time.strftime('%Y-%m-%d %H:%M:%S')
         
-        # Отправляем сообщение администратору
-        await context.bot.send_message(
-            chat_id="@AP1int",
-            text=f"💰 Пользователь @{username} подтвердил оплату\n"
-                 f"⏰ Время: {current_time}"
-        )
+        # Get admin chat ID from environment variable
+        admin_chat_id = os.getenv("ADMIN_CHAT_ID")
+        
+        if not admin_chat_id:
+            logger.error("ADMIN_CHAT_ID not set in environment variables")
+            await query.edit_message_text(
+                "❌ Ошибка: не настроен ADMIN_CHAT_ID. Пожалуйста, обратитесь к администратору."
+            )
+            return
+            
+        try:
+            # Convert chat_id to integer
+            admin_chat_id = int(admin_chat_id)
+            
+            # Send message to admin using chat ID
+            await context.bot.send_message(
+                chat_id=admin_chat_id,
+                text=f"💰 Пользователь @{username} подтвердил оплату\n"
+                     f"⏰ Время: {current_time}"
+            )
+            logger.info(f"Successfully sent admin notification to chat_id: {admin_chat_id}")
+            
+        except ValueError:
+            logger.error(f"Invalid ADMIN_CHAT_ID format: {admin_chat_id}")
+            await query.edit_message_text(
+                "❌ Ошибка: неверный формат ADMIN_CHAT_ID. Пожалуйста, обратитесь к администратору."
+            )
+            return
+        except Exception as e:
+            logger.error(f"Failed to send admin notification: {str(e)}")
+            logger.error(f"Admin chat ID: {admin_chat_id}")
+            await query.edit_message_text(
+                "❌ Ошибка при отправке уведомления администратору.\n"
+                "Пожалуйста, обратитесь к администратору."
+            )
+            return
         
         await query.edit_message_text(
             "✅ Информация об оплате отправлена администратору.\n"
@@ -253,7 +294,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 f"📱 iPhone - Streisand:\n{subscription_links['streisand']}\n\n"
                 f"⚠️ Аккаунт действителен 5 дней\n\n"
                 f"💳 Ссылка для оплаты:\n{subscription_links['payment_url']}\n\n"
-                f"🔗 Ссылка для подписку VPN:\n{subscription_links['subuser_url']}\n\n"
+                f"🔗 Ссылка на подписку VPN:\n{subscription_links['subuser_url']}\n\n"
             )
             
             await query.edit_message_text(reply_text)
