@@ -5,6 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
 from marzban_backend import MarzbanBackend  # Импортируем ваш класс
 import time
+import asyncio
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -16,8 +17,18 @@ load_dotenv()
 # Получаем токен
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+# Получаем список операторов из .env
+OPERATORS = os.getenv("OPERATORS", "").split(",")
+OPERATORS = [op.strip() for op in OPERATORS if op.strip()]  # Убираем пустые значения и пробелы
+logger.info(f"Loaded operators from env: {OPERATORS}")
+
 # Инициализация MarzbanBackend
 marzban = MarzbanBackend()
+
+# Функция для проверки оператора
+def is_operator(username: str) -> bool:
+    logger.info(f"Checking if user '{username}' is operator. Operators list: {OPERATORS}")
+    return username in OPERATORS
 
 # Обновляем функцию start с добавлением кнопок меню
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -25,6 +36,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton("📱 Мой VPN", callback_data="menu_get_user")],
         [InlineKeyboardButton("🎁 Получить пробный период", callback_data="menu_get_trial")],
     ]
+    
+    # Добавляем кнопку перезагрузки сервера для операторов
+    current_user = update.effective_user.username
+    logger.info(f"Checking operator status for user: {current_user}")
+    
+    if current_user and is_operator(current_user):
+        logger.info(f"User {current_user} is operator, adding restart button")
+        keyboard.append([InlineKeyboardButton("🔄 Перезагрузить сервер", callback_data="restart_server")])
+    else:
+        logger.info(f"User {current_user} is not operator, skipping restart button")
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         'Привет! Я бот для управления VPN.\n\n'
@@ -161,7 +183,32 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     
-    if query.data.startswith("payment_confirmed_"):
+    if query.data == "restart_server":
+        # Проверяем, является ли пользователь оператором
+        if not update.effective_user.username or not is_operator(update.effective_user.username):
+            await query.edit_message_text("❌ У вас нет прав для выполнения этой операции.")
+            return
+            
+        try:
+            # Запускаем команду перезагрузки сервера
+            process = await asyncio.create_subprocess_exec(
+                '/usr/bin/docker', 'restart', 'amazing_curran',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode == 0:
+                await query.edit_message_text("✅ Сервер успешно перезагружен!")
+            else:
+                error_msg = stderr.decode() if stderr else "Неизвестная ошибка"
+                await query.edit_message_text(f"❌ Ошибка при перезагрузке сервера:\n{error_msg}")
+                
+        except Exception as e:
+            logger.error(f"Error restarting server: {str(e)}")
+            await query.edit_message_text("❌ Произошла ошибка при перезагрузке сервера.")
+    
+    elif query.data.startswith("payment_confirmed_"):
         username = query.data.split("_")[2]
         current_time = time.strftime('%Y-%m-%d %H:%M:%S')
         
