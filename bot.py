@@ -74,8 +74,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         'Например - /get_user для получения информации о вашей подписке\n'
         'Пока сервер в режиме тестирования, потом подписка 200р/мес\n\n'
         '🛜 Купить Роутер и забыть про VPN:\n'
-        'https://ozon.ru/product/1902614243\n\n'
-        '💬 Техподдержка и обсуждение в группе: @seeyoutubefree',
+        'https://ozon.ru/product/2288765942\n\n'
+        '💬 Техподдержка, оплата и контакт админа: @AP1int',
         reply_markup=reply_markup
     )
 
@@ -130,7 +130,7 @@ async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 # Проверка срока действия для кнопки оплаты
                 payment_url = links.get('payment_url')
                 # Условие: (истек ИЛИ истекает в ближайшие 5 дней) И есть ссылка на оплату
-                if payment_url and expire and expire < (current_time + 5 * 86400):
+                if payment_url and expire < (current_time + 5 * 86400):
                     keyboard = [
                         [InlineKeyboardButton("💳 Оплатить", url=payment_url)],
                         [InlineKeyboardButton("✅ Я оплатил", callback_data=f"payment_confirmed_{username_tg}")]
