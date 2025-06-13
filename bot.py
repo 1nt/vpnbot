@@ -122,6 +122,7 @@ async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 if links.get('subuser_url'):
                     info_text += f"▶️ Ссылка на подписку (для приложений):\n`{links['subuser_url']}`\n\n"
                 if links.get('v2rayng'):
+                    
                     info_text += f"📱 Android (V2rayNG):\n{links['v2rayng']}\n\n"
                 if links.get('streisand'):
                     info_text += f"📱 iOS (Streisand):\n{links['streisand']}\n\n"
@@ -426,7 +427,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     if links.get('subuser_url'):
                         info_text += f"▶️ Ссылка на подписку (для приложений):\n`{links['subuser_url']}`\n\n"
                     if links.get('v2rayng'):
-                        info_text += f"📱 Android (V2rayNG):\n{links['v2rayng']}\n\n"
+                        info_text += f"📱 Android (V2rayNG):\n`{links['v2rayng']}`\n\n"
                     if links.get('streisand'):
                         info_text += f"📱 iOS (Streisand):\n{links['streisand']}\n\n"
 
@@ -530,7 +531,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                          f"⏳ Он будет действовать 5 дней.\n\n"
                          f"🔗 Ссылки для подключения:\n\n"
                          f"▶️ Ссылка на подписку (для приложений):\n`{subscription_links.get('subuser_url', 'Недоступно')}`\n\n"
-                         f"📱 Android (V2rayNG):\n{subscription_links.get('v2rayng', 'Недоступно')}\n\n"
+                         f"📱 Android (V2rayNG):\n`{subscription_links.get('v2rayng', 'Недоступно')}`\n\n"
                          f"📱 iOS (Streisand):\n{subscription_links.get('streisand', 'Недоступно')}\n\n"
                      )
                      payment_url = subscription_links.get('payment_url')
