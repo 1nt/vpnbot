@@ -311,16 +311,16 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await query.edit_message_text("⏳ Начинаю перезагрузку сервера Marzban (docker restart)...")
         try:
             # Запускаем команду перезагрузки сервера
-            logger.info(f"Оператор {user_identifier} инициировал перезагрузку контейнера 'amazing_curran'")
+            logger.info(f"Оператор {user_identifier} инициировал перезагрузку контейнера 'tf2-server'")
             process = await asyncio.create_subprocess_exec(
-                '/usr/bin/docker', 'restart', 'amazing_curran', # Убедитесь, что имя контейнера верное
+                '/usr/bin/docker', 'restart', 'tf2-server', # Убедитесь, что имя контейнера верное
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await process.communicate() # Ждем завершения команды
 
             if process.returncode == 0:
-                logger.info("Команда 'docker restart amazing_curran' успешно выполнена.")
+                logger.info("Команда 'docker restart tf2-server' успешно выполнена.")
                 await query.edit_message_text("✅ Сервер Marzban успешно перезагружен!")
                 # Можно добавить небольшую паузу перед тем, как бот снова будет активно им пользоваться
                 # await asyncio.sleep(5)
