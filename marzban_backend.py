@@ -36,6 +36,8 @@ class MarzbanBackend:
         self.username = os.getenv("MARZBAN_USER")
         self.password = os.getenv("MARZBAN_PASSWORD")
         self.payment_url = os.getenv("PAYMENT_URL", "") # URL для кнопки оплаты
+        self.trial_days = int(os.getenv("TRIAL_DAYS", "5")) # Дней для триала
+        self.router_url = os.getenv("ROUTER_URL", "") # URL для покупки роутера
         self.default_timeout = 20 # Таймаут для запросов в секундах
 
         if not self.base_url or not self.username or not self.password:
@@ -60,6 +62,8 @@ class MarzbanBackend:
         if not self._authorize():
              # Если авторизация не удалась, генерируем исключение
              raise RuntimeError("Не удалось авторизоваться в Marzban API при инициализации.")
+
+        print('DEBUG: router_url from env:', os.getenv('ROUTER_URL'))
 
     def _make_request(self, method: str, path: str, data=None, params=None, is_auth=False) -> requests.Response | None:
         """Внутренний метод для выполнения запросов к API."""
@@ -232,8 +236,8 @@ class MarzbanBackend:
         }
 
         if is_trial:
-            # Устанавливаем срок действия через 5 дней (в секундах от эпохи)
-            expire_timestamp = int(time.time()) + (5 * 24 * 60 * 60)
+            # Устанавливаем срок действия через trial_days дней (в секундах от эпохи)
+            expire_timestamp = int(time.time()) + (self.trial_days * 24 * 60 * 60)
             data["expire"] = expire_timestamp
             # Лимит для триала (примерно 15 Гб)
             data["data_limit"] = 15 * (1024**3)
@@ -264,6 +268,7 @@ class MarzbanBackend:
             'streisand': "https://apps.apple.com/app/streisand/id6450534064", # Просто ссылка на приложение
             'subuser_url': None, # URL для импорта подписки
             'payment_url': self.payment_url or None, # URL для оплаты
+        
         }
         if not subscription_url:
             logger.warning(f"Не передан subscription_url для пользователя '{username}', ссылка 'subuser_url' будет пустой.")
