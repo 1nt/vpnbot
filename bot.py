@@ -308,7 +308,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await query.edit_message_text("❌ У вас нет прав для выполнения этой операции.")
             return
 
-        await query.edit_message_text("⏳ Начинаю перезагрузку сервера Marzban (docker restart)...")
+        await query.edit_message_text("⏳ Начинаю перезагрузку сервера tf2-server (docker restart)...")
         try:
             # Запускаем команду перезагрузки сервера
             logger.info(f"Оператор {user_identifier} инициировал перезагрузку контейнера 'tf2-server'")
@@ -321,13 +321,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             if process.returncode == 0:
                 logger.info("Команда 'docker restart tf2-server' успешно выполнена.")
-                await query.edit_message_text("✅ Сервер Marzban успешно перезагружен!")
+                await query.edit_message_text("✅ Сервер tf2-server успешно перезагружен!")
                 # Можно добавить небольшую паузу перед тем, как бот снова будет активно им пользоваться
                 # await asyncio.sleep(5)
             else:
                 error_msg = stderr.decode().strip() if stderr else "Неизвестная ошибка Docker"
-                logger.error(f"Ошибка при перезагрузке сервера Marzban. Код: {process.returncode}. Ошибка: {error_msg}")
-                await query.edit_message_text(f"❌ Ошибка при перезагрузке сервера Marzban:\n`{error_msg}`", parse_mode='Markdown')
+                logger.error(f"Ошибка при перезагрузке сервера tf2-server. Код: {process.returncode}. Ошибка: {error_msg}")
+                await query.edit_message_text(f"❌ Ошибка при перезагрузке сервера tf2-server:\n`{error_msg}`", parse_mode='Markdown')
 
         except FileNotFoundError:
              logger.error("Ошибка перезагрузки: команда 'docker' не найдена по пути /usr/bin/docker")
