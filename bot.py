@@ -61,7 +61,9 @@ def format_subscription_links(links: dict) -> str:
     
     if links.get('v2rayng'):
         links_text += f"[📱 Android (V2rayNG)]({links['v2rayng']})\n\n"
-    
+    if links.get('v2rayng_help'):
+        links_text += f"[📱 Android (V2rayNG)]({links['v2rayng_help']})\n\n"
+        
     if links.get('streisand'):
         links_text += f"[📱 iOS (Streisand)]({links['streisand']})\n\n"
     

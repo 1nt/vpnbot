@@ -264,7 +264,9 @@ class MarzbanBackend:
     def get_subscription_links(self, username: str, subscription_url: str | None) -> dict:
         """Генерирует ссылки для подписки для разных клиентов."""
         links = {
-            'v2rayng': "https://github.com/2dust/v2rayNG/releases/download/1.10.5/v2rayNG_1.10.5_universal.apk", # Просто ссылка на приложение
+            'v2rayng': "https://github.com/2dust/v2rayNG/releases/download/1.10.8/v2rayNG_1.10.8_universal.apk", # Просто ссылка на приложение
+            #'v2rayng_import': "v2rayng://install-sub/?url={encoded_sub_url}&name={urllib.parse.quote(username)}", # Ссылка для импорта подписки
+            'v2rayng_help': "https://telegra.ph/v2rayNG-07-17", # Ссылка на страницу помощи
             'streisand': "https://apps.apple.com/app/streisand/id6450534064", # Просто ссылка на приложение
             'subuser_url': None, # URL для импорта подписки
             'payment_url': self.payment_url or None, # URL для оплаты
