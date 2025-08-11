@@ -8,6 +8,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQuer
 from marzban_backend import MarzbanBackend  # Импортируем ваш класс
 import time
 import asyncio
+import hashlib
+import secrets
 
 # Настройка логирования с более детальным форматом
 logging.basicConfig(
@@ -25,11 +27,56 @@ if not TELEGRAM_BOT_TOKEN:
     logger.critical("TELEGRAM_BOT_TOKEN не найден в .env файле!")
     exit("Ошибка: TELEGRAM_BOT_TOKEN не установлен.")
 
+# Получаем секрет для хеширования
+SECRET = os.getenv("SECRET")
+if not SECRET:
+    logger.critical("SECRET не найден в .env файле!")
+    exit("Ошибка: SECRET не установлен.")
+
 
 # Получаем список операторов из .env
 OPERATORS = os.getenv("OPERATORS", "").split(",")
 OPERATORS = [op.strip() for op in OPERATORS if op.strip()]  # Убираем пустые значения и пробелы
 logger.info(f"Загружены операторы из .env: {OPERATORS}")
+
+# Функция для генерации хешированного имени пользователя
+def generate_marzban_username(user_id: int) -> str:
+    """
+    Генерирует хешированное имя пользователя из ID Telegram с солью SECRET
+    user_id: ID пользователя Telegram
+    returns: 5 символов из A-Z a-z 0-9
+    """
+    # Создаем строку для хеширования: ID + SECRET
+    data_to_hash = f"{user_id}{SECRET}"
+    
+    # Создаем SHA-256 хеш
+    hash_object = hashlib.sha256(data_to_hash.encode())
+    hash_hex = hash_object.hexdigest()
+    
+    # Берем первые 10 символов хеша для большей случайности
+    hash_part = hash_hex[:10]
+    
+    # Создаем маппинг для преобразования в нужные символы
+    # 0-9 -> 0-9, a-f -> a-z, остальное -> A-Z
+    char_map = {}
+    for i in range(10):
+        char_map[chr(ord('0') + i)] = chr(ord('0') + i)  # 0-9
+    for i in range(6):
+        char_map[chr(ord('a') + i)] = chr(ord('a') + i)  # a-f -> a-z
+    for i in range(6, 26):
+        char_map[chr(ord('a') + i)] = chr(ord('A') + i)  # g-z -> A-Z
+    
+    # Преобразуем хеш в нужные символы
+    result = ""
+    for char in hash_part:
+        if char in char_map:
+            result += char_map[char]
+        else:
+            # Если символ не в маппинге, используем его как есть
+            result += char
+    
+    # Берем первые 5 символов
+    return result[:5]
 
 # Инициализация MarzbanBackend
 try:
@@ -49,24 +96,43 @@ def is_operator(username: str) -> bool:
 # Общая функция для форматирования ссылок подписки
 def format_subscription_links(links: dict) -> str:
     """
-    Форматирует ссылки подписки в единый текст
+    Форматирует ссылки подписки: сначала ссылка на подписку, затем список приложений с кликабельными ссылками
     links: словарь с ссылками подписки
     returns: отформатированный текст со ссылками
     """
-    links_text = "🔗 Ссылки для подключения:\n\n"
-    
+    links_text = ""
     if links.get('subuser_url'):
-        links_text += f"▶️ Ссылка на подписку (для приложений):\n`{links['subuser_url']}`\n\n"
-        links_text += f"Скопируйте ссылку в буфер обмена и вставьте в приложение в зависимости от вашего устройства.\n\n"
-    
-    if links.get('v2rayng'):
-        links_text += f"[📱 Android (V2rayNG)]({links['v2rayng']})\n\n"
-    if links.get('v2rayng_help'):
-        links_text += f"[📱 Помощь по приложению V2rayNG]({links['v2rayng_help']})\n\n"
-        
-    if links.get('streisand'):
-        links_text += f"[📱 iOS (Streisand)]({links['streisand']})\n\n"
-    
+        links_text += (
+            "▶️ Ссылка на подписку (для приложений):\n"
+            f"`{links['subuser_url']}`\n"
+            "Нажмите на ссылку выше 👆 чтобы скопировать ее в буфер обмена и вставьте в приложение в зависимости от вашего устройства.\n\n"
+        )
+    links_text += (
+        "Установи одно из приложений для подключения VPN на своё устройство:\n"
+        "— iPhone и iPad: "
+        "[Streisand](https://apps.apple.com/app/id6450534064), "
+        "[v2RayTun](https://apps.apple.com/us/app/v2raytun/id6476628951?platform=iphone)\n"
+        "— Android: "
+        "[Happ](https://play.google.com/store/apps/details?id=com.happproxy), "
+        "[v2RayTun](https://play.google.com/store/apps/details?id=com.v2raytun.android&hl=ru), "
+        "[Hiddify](https://play.google.com/store/apps/details?id=app.hiddify.com)\n"
+        "[Инструкция для приложения Happ](https://telegra.ph/Instrukciya-Android-08-11)\n"
+        "— Windows: "
+        "[Hiddify](https://apps.microsoft.com/detail/9PDFNL3QV2S5?hl=neutral&gl=RU&ocid=pdpshare), "
+        "[Nekoray (NekoBox)](https://github.com/MatsuriDayo/nekoray/releases/download/4.0.1/nekoray-4.0.1-2024-12-12-windows64.zip)\n"
+        "— macOS (проц. M1–M4): "
+        "[Streisand](https://apps.apple.com/app/id6450534064), "
+        "[v2RayTun](https://apps.apple.com/us/app/v2raytun/id6476628951?platform=mac)\n"
+        "— macOS (проц. Intel): "
+        "[v2RayTun](https://apps.apple.com/us/app/v2raytun/id6476628951?platform=mac), "
+        "[V2Box](https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690)\n"
+        "— AndroidTV: "
+        "[Hiddify](https://play.google.com/store/apps/details?id=app.hiddify.com), "
+        "[Happ](https://play.google.com/store/apps/details?id=com.happproxy), "
+        "[v2RayTun](https://play.google.com/store/apps/details?id=com.v2raytun.android&hl=ru)\n"
+        "— Linux: "
+        "[Hiddify](https://github.com/hiddify/hiddify-app/releases/latest/download/Hiddify-Linux-x64.AppImage)\n"
+    )
     return links_text
 
 # Обновляем функцию start с добавлением кнопок меню
@@ -119,7 +185,7 @@ async def get_user_vpn_info(user_id: int, username: str = None, message_func=Non
     """
     # Определяем идентификатор пользователя
     user_identifier = username or str(user_id)
-    marzban_username = f"{user_identifier}vpn"
+    marzban_username = generate_marzban_username(user_id)
     
     logger.info(f"Получение VPN информации для '{user_identifier}' (Marzban: '{marzban_username}')")
 
@@ -149,11 +215,11 @@ async def get_user_vpn_info(user_id: int, username: str = None, message_func=Non
 
                 # Проверка срока действия для кнопки оплаты
                 payment_url = links.get('payment_url')
-                # Условие: (истек ИЛИ истекает в ближайшие 5 дней) И есть ссылка на оплату
-                if payment_url and expire < (current_time + 5 * 86400):
+                # Условие: (истек ИЛИ истекает в ближайшие 29 дней) И есть ссылка на оплату
+                if payment_url and expire < (current_time + 29 * 86400):
                     keyboard = [
                         [InlineKeyboardButton("💳 Оплатить", url=payment_url)],
-                        [InlineKeyboardButton("✅ Я оплатил", callback_data=f"payment_confirmed_{user_identifier}")]
+                        [InlineKeyboardButton("✅ Проверка оплаты", callback_data=f"payment_confirmed_{user_identifier}")]
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
                     if expire < current_time:
@@ -205,7 +271,7 @@ async def request_trial_common(user_id: int, username: str = None, message_func=
     message_func: функция для отправки сообщения
     """
     user_identifier = username or str(user_id)
-    marzban_username = f"{user_identifier}vpn"
+    marzban_username = generate_marzban_username(user_id)
     logger.info(f"Запрос триала от '{user_identifier}' (проверяем существование '{marzban_username}')")
 
     try:
@@ -252,7 +318,7 @@ async def request_trial_common(user_id: int, username: str = None, message_func=
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await message_func(
-                "У вас еще нет VPN аккаунта. Хотите получить пробный доступ на 5 дней?",
+                "У вас еще нет VPN аккаунта. Хотите получить пробный доступ на 10 дней?",
                 reply_markup=reply_markup
             )
 
@@ -344,6 +410,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     elif query.data.startswith("payment_confirmed_"):
         confirmed_user_identifier = query.data.split("_")[2] # Идентификатор пользователя, нажавшего кнопку
         current_time_str = time.strftime('%Y-%m-%d %H:%M:%S')
+        marzban_username = generate_marzban_username(user_id)
 
         admin_chat_id = os.getenv("ADMIN_CHAT_ID")
         if not admin_chat_id:
@@ -359,7 +426,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             message_text = (f"💰 Пользователь {user_identifier} (ID: `{user_id}`) "
                             f"нажал кнопку 'Я оплатил'.\n"
                             f"⏰ Время: {current_time_str}\n"
-                            f"Пожалуйста, проверьте оплату и активируйте/продлите аккаунт: `{confirmed_user_identifier}vpn`")
+                            f"Пожалуйста, проверьте оплату и активируйте/продлите аккаунт: `{marzban_username}`")
 
             await context.bot.send_message(
                 chat_id=admin_chat_id_int,
@@ -402,8 +469,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # ==================
     elif query.data.startswith("trial_yes_"):
         trial_user_identifier = query.data.split("_")[2] # Идентификатор пользователя из callback_data
-        marzban_username = f"{trial_user_identifier}vpn"
-        logger.info(f"Пользователь {trial_user_identifier} согласился на триал. Создаем аккаунт '{marzban_username}'")
+        marzban_username = generate_marzban_username(user_id)
+        logger.info(f"Пользователь {user_identifier} согласился на триал. Создаем аккаунт '{marzban_username}'")
 
         # Небольшая проверка, вдруг пользователь нажал дважды быстро
         if context.user_data.get(f'trial_creating_{trial_user_identifier}', False):
@@ -428,7 +495,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
                      reply_text = (
                          f"✅ Тестовый аккаунт `{marzban_username}` создан!\n\n"
-                         f"⏳ Он будет действовать 5 дней.\n\n"
+                         f"⏳ Он будет действовать 10 дней.\n\n"
                          f"{format_subscription_links(subscription_links)}\n\n"
                      )
                      payment_url = subscription_links.get('payment_url')

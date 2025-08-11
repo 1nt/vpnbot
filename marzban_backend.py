@@ -39,6 +39,7 @@ class MarzbanBackend:
         self.trial_days = int(os.getenv("TRIAL_DAYS", "5")) # Дней для триала
         self.router_url = os.getenv("ROUTER_URL","https://ozon.ru/product/2288765942") # URL для покупки роутера
         self.default_timeout = 20 # Таймаут для запросов в секундах
+        
 
         if not self.base_url or not self.username or not self.password:
              logger.critical("MARZBAN_API_URL, MARZBAN_USER или MARZBAN_PASSWORD не установлены!")
