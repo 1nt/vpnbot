@@ -11,6 +11,168 @@ import asyncio
 import hashlib
 import secrets
 
+# Словари с переводами
+RUSSIAN_TEXTS = {
+    "start_greeting": "Привет! Я бот для управления VPN.\n\nВыберите действие внизу страницы:\n\nНапример - /get_user для получения информации о вашей подписке\nПока сервер в режиме тестирования, потом подписка 200р/мес\n\n",
+    "router_text": "🛜 Купить Роутер и забыть про VPN:\n",
+    "support_contact": "💬 Техподдержка, оплата и контакт админа: @AP1int",
+    "vpn_account_info": "ℹ️ Ваш VPN аккаунт:",
+    "login": "👤 Логин:",
+    "status": "🚦 Статус:",
+    "expires": "⏳ Срок действия до:",
+    "subscription_expired": "⚠️ Ваша подписка истекла!",
+    "subscription_expiring": "⏳ Ваша подписка скоро истекает!",
+    "payment_instructions": "Нажмите 'Оплатить' для продления или 'Я оплатил' после оплаты.",
+    "subscription_links_header": "🔗 Ссылки для подключения:\n\n",
+    "subscription_link": "▶️ Ссылка на подписку (для приложений):\n",
+    "copy_instructions": "Нажмите на ссылку выше 👆 чтобы скопировать ее в буфер обмена и вставьте в приложение в зависимости от вашего устройства.\n\n",
+    "install_apps_header": "Установи одно из приложений для подключения VPN на своё устройство:\n",
+    "iphone_ipad": "— iPhone и iPad:",
+    "android": "— Android:",
+    "windows": "— Windows:",
+    "macos_m1": "— macOS (проц. M1–M4):",
+    "macos_intel": "— macOS (проц. Intel):",
+    "androidtv": "— AndroidTV:",
+    "linux": "— Linux:",
+    "trial_offer": "У вас еще нет VPN аккаунта. Хотите получить пробный доступ на 10 дней?",
+    "trial_created": "✅ Тестовый аккаунт",
+    "trial_duration": "⏳ Он будет действовать 10 дней.\n\n",
+    "payment_option": "💰 Вы можете оплатить подпипу в любое время:\n",
+    "payment_link_not_found": "Ссылка на оплату не найдена.\n\n",
+    "trial_questions": "💬 Если возникнут вопросы, пишите в группу @seeyoutubefree",
+    "trial_declined": "Хорошо, вы отказались от тестового периода. Если передумаете, просто нажмите кнопку снова.",
+    "account_already_exists": "У вас уже есть активный VPN аккаунт.\nИспользуйте команду /get_user или кнопку 'Мой VPN' для получения информации о нем.",
+    "account_expired": "⚠️ Срок действия вашего аккаунта истек!\n\n",
+    "payment_for_renewal": "Для продления доступа, пожалуйста, оплатите подписку:\n💳",
+    "payment_confirmation": "После оплаты нажмите кнопку 'Я оплатил' (если доступна).",
+    "payment_sent": "✅ Ваше подтверждение отправлено администратору.\nОжидайте проверки и активации/продления аккаунта.",
+    "payment_notification": "💰 Пользователь",
+    "payment_time": "⏰ Время:",
+    "payment_check_request": "Пожалуйста, проверьте оплату и активируйте/продлите аккаунт:",
+    "server_restart": "⏳ Начинаю перезагрузку сервера tf2-server (docker restart)...",
+    "server_restarted": "✅ Сервер tf2-server успешно перезагружен!",
+    "server_restart_error": "❌ Ошибка при перезагрузке сервера tf2-server:\n",
+    "docker_not_found": "❌ Ошибка: команда 'docker' не найдена.",
+    "restart_error": "❌ Произошла непредвиденная ошибка при перезагрузке сервера.",
+    "no_permission": "❌ У вас нет прав для выполнения этой операции.",
+    "user_not_found": "❌ Ошибка: не удалось определить пользователя.",
+    "account_error": "❌ Произошла ошибка при получении информации о вашем аккаунте.\nПожалуйста, попробуйте позже или обратитесь в поддержку.",
+    "trial_error": "❌ Произошла ошибка при обработке вашего запроса.\nПожалуйста, попробуйте позже или обратитесь в поддержку.",
+    "trial_creation_error": "❌ Не удалось создать тестовый аккаунт. Ошибка API:",
+    "trial_server_error": "❌ Не удалось создать тестовый аккаунт. Произошла ошибка на сервере. Попробуйте позже или обратитесь в поддержку.",
+    "trial_unexpected_error": "❌ Произошла непредвиденная ошибка при создании аккаунта.\nПожалуйста, попробуйте позже или обратитесь в поддержку.",
+    "trial_already_exists": "❌ Не удалось создать аккаунт: пользователь",
+    "already_exists": "уже существует.",
+    "try_later": "Попробуйте позже или обратитесь в поддержку.",
+    "account_created_no_links": "✅ Аккаунт",
+    "created_but_no_links": "создан, но не удалось получить ссылки для подключения.\nПожалуйста, попробуйте /get_user позже или обратитесь в поддержку.",
+    "config_error": "❌ Ошибка конфигурации: не удалось уведомить администратора.\nПожалуйста, обратитесь в поддержку.",
+    "admin_notification_error": "❌ Произошла ошибка при отправке уведомления администратору.\nПожалуйста, обратитесь в поддержку.",
+    "trial_creating": "⏳ Создаю для вас пробный аккаунт",
+    "trial_processing": "Запрос уже обрабатывается...",
+    "menu_my_vpn": "📱 Мой VPN",
+    "menu_get_trial": "🎁 Получить пробный период",
+    "menu_restart_server": "🔄 Перезагрузить сервер",
+    "button_pay": "💳 Оплатить",
+    "button_payment_confirmed": "✅ Проверка оплаты",
+    "button_trial_yes": "✅ Да, хочу!",
+    "button_trial_no": "❌ Нет, спасибо",
+    "button_payment_confirmed_text": "✅ Я оплатил",
+    "commands_start": "🚀 Главное меню",
+    "commands_get_user": "📱 Мой VPN",
+    "commands_get_trial": "🎁 Получить пробный период"
+}
+
+ENGLISH_TEXTS = {
+    "start_greeting": "Hello! I'm a VPN management bot.\n\nChoose an action below:\n\nFor example - /get_user to get information about your subscription\nWhile the server is in testing mode, then subscription 200r/month\n\n",
+    "router_text": "🛜 Buy a Router and forget about VPN:\n",
+    "support_contact": "💬 Technical support, payment and admin contact: @AP1int",
+    "vpn_account_info": "ℹ️ Your VPN account:",
+    "login": "👤 Login:",
+    "status": "🚦 Status:",
+    "expires": "⏳ Expires:",
+    "subscription_expired": "⚠️ Your subscription has expired!",
+    "subscription_expiring": "⏳ Your subscription expires soon!",
+    "payment_instructions": "Click 'Pay' to renew or 'I paid' after payment.",
+    "subscription_links_header": "🔗 Connection links:\n\n",
+    "subscription_link": "▶️ Subscription link (for applications):\n",
+    "copy_instructions": "Click the link above 👆 to copy it to clipboard and paste it into the application depending on your device.\n\n",
+    "install_apps_header": "Install one of the VPN applications on your device:\n",
+    "iphone_ipad": "— iPhone and iPad:",
+    "android": "— Android:",
+    "windows": "— Windows:",
+    "macos_m1": "— macOS (M1-M4 proc.):",
+    "macos_intel": "— macOS (Intel proc.):",
+    "androidtv": "— AndroidTV:",
+    "linux": "— Linux:",
+    "trial_offer": "You don't have a VPN account yet. Want to get a 10-day trial access?",
+    "trial_created": "✅ Trial account",
+    "trial_duration": "⏳ It will be valid for 10 days.\n\n",
+    "payment_option": "💰 You can pay for subscription at any time:\n",
+    "payment_link_not_found": "Payment link not found.\n\n",
+    "trial_questions": "💬 If you have questions, write to the group @seeyoutubefree",
+    "trial_declined": "Okay, you declined the trial period. If you change your mind, just click the button again.",
+    "account_already_exists": "You already have an active VPN account.\nUse the /get_user command or 'My VPN' button to get information about it.",
+    "account_expired": "⚠️ Your account has expired!\n\n",
+    "payment_for_renewal": "To renew access, please pay for the subscription:\n💳",
+    "payment_confirmation": "After payment, click the 'I paid' button (if available).",
+    "payment_sent": "✅ Your confirmation has been sent to the administrator.\nWait for verification and activation/renewal of the account.",
+    "payment_notification": "💰 User",
+    "payment_time": "⏰ Time:",
+    "payment_check_request": "Please check the payment and activate/renew the account:",
+    "server_restart": "⏳ Starting server tf2-server restart (docker restart)...",
+    "server_restarted": "✅ Server tf2-server successfully restarted!",
+    "server_restart_error": "❌ Error restarting server tf2-server:\n",
+    "docker_not_found": "❌ Error: 'docker' command not found.",
+    "restart_error": "❌ An unexpected error occurred while restarting the server.",
+    "no_permission": "❌ You don't have permission to perform this operation.",
+    "user_not_found": "❌ Error: Could not determine user.",
+    "account_error": "❌ An error occurred while getting information about your account.\nPlease try again later or contact support.",
+    "trial_error": "❌ An error occurred while processing your request.\nPlease try again later or contact support.",
+    "trial_creation_error": "❌ Failed to create trial account. API error:",
+    "trial_server_error": "❌ Failed to create trial account. Server error occurred. Try again later or contact support.",
+    "trial_unexpected_error": "❌ An unexpected error occurred while creating the account.\nPlease try again later or contact support.",
+    "trial_already_exists": "❌ Failed to create account: user",
+    "already_exists": "already exists.",
+    "try_later": "Try again later or contact support.",
+    "account_created_no_links": "✅ Account",
+    "created_but_no_links": "created but failed to get connection links.\nPlease try /get_user later or contact support.",
+    "config_error": "❌ Configuration error: Could not notify administrator.\nPlease contact support.",
+    "admin_notification_error": "❌ An error occurred while sending notification to administrator.\nPlease contact support.",
+    "trial_creating": "⏳ Creating trial account for you",
+    "trial_processing": "Request is already being processed...",
+    "menu_my_vpn": "📱 My VPN",
+    "menu_get_trial": "🎁 Get trial period",
+    "menu_restart_server": "🔄 Restart server",
+    "button_pay": "💳 Pay",
+    "button_payment_confirmed": "✅ Payment verification",
+    "button_trial_yes": "✅ Yes, I want!",
+    "button_trial_no": "❌ No, thanks",
+    "button_payment_confirmed_text": "✅ I paid",
+    "commands_start": "🚀 Main menu",
+    "commands_get_user": "📱 My VPN",
+    "commands_get_trial": "🎁 Get trial period"
+}
+
+# Функция для получения текста на нужном языке
+def get_text(language_code: str, key: str) -> str:
+    """
+    Возвращает текст на нужном языке
+    language_code: код языка пользователя (например, 'ru', 'en')
+    key: ключ для получения текста
+    returns: текст на нужном языке или английский по умолчанию
+    """
+    logger.debug(f"get_text вызван с language_code='{language_code}', key='{key}'")
+    
+    if language_code and language_code.startswith('ru'):
+        result = RUSSIAN_TEXTS.get(key, ENGLISH_TEXTS.get(key, key))
+        logger.debug(f"Выбран русский текст для '{key}': {result[:30]}...")
+        return result
+    else:
+        result = ENGLISH_TEXTS.get(key, key)
+        logger.debug(f"Выбран английский текст для '{key}': {result[:30]}...")
+        return result
+
 # Настройка логирования с более детальным форматом
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +208,8 @@ def generate_marzban_username(user_id: int) -> str:
     user_id: ID пользователя Telegram
     returns: 5 символов из A-Z a-z 0-9
     """
+    logger.debug(f"generate_marzban_username вызван с user_id={user_id}")
+    
     # Создаем строку для хеширования: ID + SECRET
     data_to_hash = f"{user_id}{SECRET}"
     
@@ -76,7 +240,9 @@ def generate_marzban_username(user_id: int) -> str:
             result += char
     
     # Берем первые 5 символов
-    return result[:5]
+    final_result = result[:5]
+    logger.debug(f"Сгенерировано имя пользователя: '{final_result}' из хеша '{hash_part}'")
+    return final_result
 
 # Инициализация MarzbanBackend
 try:
@@ -91,68 +257,79 @@ except Exception as e:
 def is_operator(username: str) -> bool:
     # Логируем только если DEBUG уровень включен, чтобы не спамить
     # logger.debug(f"Проверка, является ли пользователь '{username}' оператором. Список операторов: {OPERATORS}")
-    return username in OPERATORS
+    result = username in OPERATORS
+    logger.debug(f"Проверка оператора '{username}': {result} (список операторов: {OPERATORS})")
+    return result
 
 # Общая функция для форматирования ссылок подписки
-def format_subscription_links(links: dict) -> str:
+def format_subscription_links(links: dict, language_code: str = None) -> str:
     """
     Форматирует ссылки подписки: сначала ссылка на подписку, затем список приложений с кликабельными ссылками
     links: словарь с ссылками подписки
+    language_code: код языка пользователя
     returns: отформатированный текст со ссылками
     """
+    logger.debug(f"format_subscription_links вызван с language_code='{language_code}'")
+    logger.debug(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
+    
     links_text = ""
     if links.get('subuser_url'):
         links_text += (
-            "▶️ Ссылка на подписку (для приложений):\n"
+            f"{get_text(language_code, 'subscription_link')}"
             f"`{links['subuser_url']}`\n"
-            "Нажмите на ссылку выше 👆 чтобы скопировать ее в буфер обмена и вставьте в приложение в зависимости от вашего устройства.\n\n"
+            f"{get_text(language_code, 'copy_instructions')}"
         )
     links_text += (
-        "Установи одно из приложений для подключения VPN на своё устройство:\n"
-        "— iPhone и iPad: "
+        f"{get_text(language_code, 'install_apps_header')}"
+        f"{get_text(language_code, 'iphone_ipad')} "
         "[Streisand](https://apps.apple.com/app/id6450534064), "
         "[v2RayTun](https://apps.apple.com/us/app/v2raytun/id6476628951?platform=iphone)\n"
-        "— Android: "
+        f"{get_text(language_code, 'android')} "
         "[Happ](https://play.google.com/store/apps/details?id=com.happproxy), "
         "[v2RayTun](https://play.google.com/store/apps/details?id=com.v2raytun.android&hl=ru), "
         "[Hiddify](https://play.google.com/store/apps/details?id=app.hiddify.com)\n"
         "[Инструкция для приложения Happ](https://telegra.ph/Instrukciya-Android-08-11)\n"
-        "— Windows: "
+        f"{get_text(language_code, 'windows')} "
         "[Hiddify](https://apps.microsoft.com/detail/9PDFNL3QV2S5?hl=neutral&gl=RU&ocid=pdpshare), "
         "[Nekoray (NekoBox)](https://github.com/MatsuriDayo/nekoray/releases/download/4.0.1/nekoray-4.0.1-2024-12-12-windows64.zip)\n"
-        "— macOS (проц. M1–M4): "
+        f"{get_text(language_code, 'macos_m1')} "
         "[Streisand](https://apps.apple.com/app/id6450534064), "
         "[v2RayTun](https://apps.apple.com/us/app/v2raytun/id6476628951?platform=mac)\n"
-        "— macOS (проц. Intel): "
+        f"{get_text(language_code, 'macos_intel')} "
         "[v2RayTun](https://apps.apple.com/us/app/v2raytun/id6476628951?platform=mac), "
         "[V2Box](https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690)\n"
-        "— AndroidTV: "
+        f"{get_text(language_code, 'androidtv')} "
         "[Hiddify](https://play.google.com/store/apps/details?id=app.hiddify.com), "
         "[Happ](https://play.google.com/store/apps/details?id=com.happproxy), "
         "[v2RayTun](https://play.google.com/store/apps/details?id=com.v2raytun.android&hl=ru)\n"
-        "— Linux: "
+        f"{get_text(language_code, 'linux')} "
         "[Hiddify](https://github.com/hiddify/hiddify-app/releases/latest/download/Hiddify-Linux-x64.AppImage)\n"
     )
+    
+    logger.debug(f"Результат format_subscription_links для языка '{language_code}': {links_text[:100]}...")
     return links_text
 
 # Обновляем функцию start с добавлением кнопок меню
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = [
-        [InlineKeyboardButton("📱 Мой VPN", callback_data="menu_get_user")],
-        [InlineKeyboardButton("🎁 Получить пробный период", callback_data="menu_get_trial")],
-    ]
-
     if not update.effective_user:
         logger.warning("Получен /start от пользователя без effective_user.")
         # Можно отправить сообщение об ошибке или просто ничего не делать
         return
 
     current_user = update.effective_user.username or str(update.effective_user.id)
-    logger.info(f"Команда /start от пользователя: {current_user}")
+    language_code = update.effective_user.language_code
+    logger.info(f"Команда /start от пользователя: {current_user} (язык: {language_code})")
+    logger.info(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
+    logger.info(f"Проверка is_operator: {is_operator(current_user) if current_user else False}")
+
+    keyboard = [
+        [InlineKeyboardButton(get_text(language_code, "menu_my_vpn"), callback_data="menu_get_user")],
+        [InlineKeyboardButton(get_text(language_code, "menu_get_trial"), callback_data="menu_get_trial")],
+    ]
 
     if update.effective_user.username and is_operator(update.effective_user.username):
         logger.info(f"Пользователь {current_user} является оператором, добавляем кнопку перезагрузки")
-        keyboard.append([InlineKeyboardButton("🔄 Перезагрузить сервер", callback_data="restart_server")])
+        keyboard.append([InlineKeyboardButton(get_text(language_code, "menu_restart_server"), callback_data="restart_server")])
     # else:
         # logger.debug(f"Пользователь {current_user} не оператор, пропускаем кнопку перезагрузки")
 
@@ -161,33 +338,41 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Формируем текст с роутером
     router_text = ""
     if marzban.router_url:
-        router_text = f'🛜 Купить Роутер и забыть про VPN:\n{marzban.router_url}\n\n'
+        router_text = f"{get_text(language_code, 'router_text')}{marzban.router_url}\n\n"
     else:
-        router_text = '🛜 Купить Роутер и забыть про VPN:\nhttps://ozon.ru/product/2288765942\n\n'
+        router_text = f"{get_text(language_code, 'router_text')}https://ozon.ru/product/2288765942\n\n"
+    
+    # Логируем тексты для отладки
+    start_greeting = get_text(language_code, 'start_greeting')
+    router_text_final = router_text
+    support_contact = get_text(language_code, 'support_contact')
+    logger.info(f"Выбранные тексты для языка '{language_code}':")
+    logger.info(f"start_greeting: {start_greeting[:50]}...")
+    logger.info(f"router_text: {router_text_final[:50]}...")
+    logger.info(f"support_contact: {support_contact[:50]}...")
     
     await update.message.reply_text(
-        'Привет! Я бот для управления VPN.\n\n'
-        'Выберите действие внизу страницы:\n\n'
-        'Например - /get_user для получения информации о вашей подписке\n'
-        'Пока сервер в режиме тестирования, потом подписка 200р/мес\n\n'
-        f'{router_text}'
-        '💬 Техподдержка, оплата и контакт админа: @AP1int',
+        f"{start_greeting}"
+        f"{router_text_final}"
+        f"{support_contact}",
         reply_markup=reply_markup
     )
 
 # Общая функция для получения информации о пользователе VPN
-async def get_user_vpn_info(user_id: int, username: str = None, message_func=None) -> None:
+async def get_user_vpn_info(user_id: int, username: str = None, message_func=None, language_code: str = None) -> None:
     """
     Общая функция для получения информации о VPN пользователе
     user_id: ID пользователя Telegram
     username: username пользователя Telegram (может быть None)
     message_func: функция для отправки сообщения (update.message.reply_text или query.edit_message_text)
+    language_code: код языка пользователя
     """
     # Определяем идентификатор пользователя
     user_identifier = username or str(user_id)
     marzban_username = generate_marzban_username(user_id)
     
-    logger.info(f"Получение VPN информации для '{user_identifier}' (Marzban: '{marzban_username}')")
+    logger.info(f"Получение VPN информации для '{user_identifier}' (Marzban: '{marzban_username}', язык: '{language_code}')")
+    logger.info(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
 
     try:
         logger.info(f"Вызов marzban.get_user для '{marzban_username}'")
@@ -204,29 +389,29 @@ async def get_user_vpn_info(user_id: int, username: str = None, message_func=Non
             expire_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expire)) if expire else "не установлено"
             current_time = time.time()
 
-            info_text = f"ℹ️ Ваш VPN аккаунт:\n"
-            info_text += f"👤 Логин: `{marzban_username}`\n" # Используем Markdown для моноширинного шрифта
-            info_text += f"🚦 Статус: {status}\n"
-            info_text += f"⏳ Срок действия до: {expire_str}\n\n"
+            info_text = f"{get_text(language_code, 'vpn_account_info')}\n"
+            info_text += f"{get_text(language_code, 'login')} `{marzban_username}`\n" # Используем Markdown для моноширинного шрифта
+            info_text += f"{get_text(language_code, 'status')} {status}\n"
+            info_text += f"{get_text(language_code, 'expires')} {expire_str}\n\n"
 
             if 'subscription_links' in response and response['subscription_links']:
                 links = response['subscription_links']
-                info_text += format_subscription_links(links)
+                info_text += format_subscription_links(links, language_code)
 
                 # Проверка срока действия для кнопки оплаты
                 payment_url = links.get('payment_url')
                 # Условие: (истек ИЛИ истекает в ближайшие 29 дней) И есть ссылка на оплату
                 if payment_url and expire < (current_time + 29 * 86400):
                     keyboard = [
-                        [InlineKeyboardButton("💳 Оплатить", url=payment_url)],
-                        [InlineKeyboardButton("✅ Проверка оплаты", callback_data=f"payment_confirmed_{user_identifier}")]
+                        [InlineKeyboardButton(get_text(language_code, "button_pay"), url=payment_url)],
+                        [InlineKeyboardButton(get_text(language_code, "button_payment_confirmed"), callback_data=f"payment_confirmed_{user_identifier}")]
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
                     if expire < current_time:
-                        info_text += "⚠️ Ваша подписка истекла!\n"
+                        info_text += f"{get_text(language_code, 'subscription_expired')}\n"
                     else:
-                         info_text += "⏳ Ваша подписка скоро истекает!\n"
-                    info_text += "Нажмите 'Оплатить' для продления или 'Я оплатил' после оплаты.\n"
+                         info_text += f"{get_text(language_code, 'subscription_expiring')}\n"
+                    info_text += f"{get_text(language_code, 'payment_instructions')}\n"
                     await message_func(info_text, reply_markup=reply_markup, parse_mode='Markdown')
                 else:
                     await message_func(info_text, parse_mode='Markdown')
@@ -238,14 +423,13 @@ async def get_user_vpn_info(user_id: int, username: str = None, message_func=Non
             # Пользователь не найден ИЛИ Marzban вернул что-то неожиданное (None или не словарь)
             logger.warning(f"Пользователь Marzban '{marzban_username}' не найден или получен некорректный ответ: {response}")
             # Предлагаем триал через общую функцию
-            await request_trial_common(user_id, username, message_func)
+            await request_trial_common(user_id, username, message_func, language_code)
 
     except Exception as e:
         # --- Логирование ошибки ---
         logger.error(f"Ошибка при выполнении get_user_vpn_info для Marzban user '{marzban_username}': {e}", exc_info=True)
         await message_func(
-            "❌ Произошла ошибка при получении информации о вашем аккаунте.\n"
-            "Пожалуйста, попробуйте позже или обратитесь в поддержку."
+            f"{get_text(language_code, 'account_error')}"
         )
 
 # Команда /get_user
@@ -259,20 +443,26 @@ async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     user_id = update.effective_user.id
     username = update.effective_user.username
+    language_code = update.effective_user.language_code
     
-    await get_user_vpn_info(user_id, username, update.message.reply_text)
+    logger.info(f"Команда /get_user от пользователя: {username or user_id} (язык: {language_code})")
+    logger.info(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
+    
+    await get_user_vpn_info(user_id, username, update.message.reply_text, language_code)
 
 # Общая функция для запроса тестового периода
-async def request_trial_common(user_id: int, username: str = None, message_func=None) -> None:
+async def request_trial_common(user_id: int, username: str = None, message_func=None, language_code: str = None) -> None:
     """
     Общая функция для запроса тестового периода
     user_id: ID пользователя Telegram
     username: username пользователя Telegram (может быть None)
     message_func: функция для отправки сообщения
+    language_code: код языка пользователя
     """
     user_identifier = username or str(user_id)
     marzban_username = generate_marzban_username(user_id)
-    logger.info(f"Запрос триала от '{user_identifier}' (проверяем существование '{marzban_username}')")
+    logger.info(f"Запрос триала от '{user_identifier}' (проверяем существование '{marzban_username}', язык: '{language_code}')")
+    logger.info(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
 
     try:
         logger.info(f"[Trial Check] Вызов marzban.get_user для '{marzban_username}'")
@@ -290,43 +480,41 @@ async def request_trial_common(user_id: int, username: str = None, message_func=
                 logger.info(f"Аккаунт '{marzban_username}' просрочен.")
                 payment_url = response.get('subscription_links', {}).get('payment_url')
                 keyboard_list = []
-                text = "⚠️ Срок действия вашего аккаунта истек!\n\n"
+                text = f"{get_text(language_code, 'account_expired')}\n\n"
                 if payment_url:
-                     text += f"Для продления доступа, пожалуйста, оплатите подписку:\n💳 {payment_url}\n\n"
-                     keyboard_list.append([InlineKeyboardButton("✅ Я оплатил", callback_data=f"payment_confirmed_{user_identifier}")])
+                     text += f"{get_text(language_code, 'payment_for_renewal')} {payment_url}\n\n"
+                     keyboard_list.append([InlineKeyboardButton(get_text(language_code, "button_payment_confirmed_text"), callback_data=f"payment_confirmed_{user_identifier}")])
                 else:
-                     text += "Ссылка на оплату не найдена. Обратитесь в поддержку.\n"
+                     text += f"{get_text(language_code, 'payment_link_not_found')}\n"
 
-                text += "После оплаты нажмите кнопку 'Я оплатил' (если доступна)."
+                text += f"{get_text(language_code, 'payment_confirmation')}"
                 reply_markup = InlineKeyboardMarkup(keyboard_list) if keyboard_list else None
                 await message_func(text, reply_markup=reply_markup)
             else:
                 # Аккаунт активен
                 logger.info(f"Аккаунт '{marzban_username}' активен.")
                 await message_func(
-                    "У вас уже есть активный VPN аккаунт.\n"
-                    "Используйте команду /get_user или кнопку 'Мой VPN' для получения информации о нем."
+                    get_text(language_code, "account_already_exists")
                 )
         else:
             # Аккаунт не существует или ошибка получения, предлагаем trial
             logger.info(f"Аккаунт '{marzban_username}' не найден или ошибка получения. Предлагаем триал.")
             keyboard = [
                 [
-                    InlineKeyboardButton("✅ Да, хочу!", callback_data=f"trial_yes_{user_identifier}"),
-                    InlineKeyboardButton("❌ Нет, спасибо", callback_data="trial_no"),
+                    InlineKeyboardButton(get_text(language_code, "button_trial_yes"), callback_data=f"trial_yes_{user_identifier}"),
+                    InlineKeyboardButton(get_text(language_code, "button_trial_no"), callback_data="trial_no"),
                 ]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await message_func(
-                "У вас еще нет VPN аккаунта. Хотите получить пробный доступ на 10 дней?",
+                get_text(language_code, "trial_offer"),
                 reply_markup=reply_markup
             )
 
     except Exception as e:
         logger.error(f"Ошибка при проверке/предложении триала для '{user_identifier}': {e}", exc_info=True)
         await message_func(
-            "❌ Произошла ошибка при обработке вашего запроса.\n"
-            "Пожалуйста, попробуйте позже или обратитесь в поддержку."
+            f"{get_text(language_code, 'trial_error')}"
         )
 
 # Функция для запроса тестового периода (вызывается из /get_user или кнопки)
@@ -343,8 +531,12 @@ async def request_trial(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     user_id = update.effective_user.id
     username = update.effective_user.username
+    language_code = update.effective_user.language_code
     
-    await request_trial_common(user_id, username, message_func)
+    logger.info(f"Команда /get_trial от пользователя: {username or user_id} (язык: {language_code})")
+    logger.info(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
+    
+    await request_trial_common(user_id, username, message_func, language_code)
 
 # Обработчик кнопок
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -364,7 +556,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user_id = user.id
     username_tg = user.username
     user_identifier = username_tg or str(user_id)
-    logger.info(f"Нажата кнопка '{query.data}' пользователем {user_identifier} (ID: {user_id})")
+    language_code = user.language_code
+    logger.info(f"Нажата кнопка '{query.data}' пользователем {user_identifier} (ID: {user_id}, язык: {language_code})")
+    logger.info(f"Тип language_code: {type(language_code)}, значение: '{language_code}'")
+    logger.info(f"Проверка is_operator: {is_operator(user_identifier) if username_tg else False}")
     # ---
 
     # ==================
@@ -373,10 +568,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if query.data == "restart_server":
         if not username_tg or not is_operator(username_tg):
             logger.warning(f"Неавторизованная попытка перезагрузки сервера от {user_identifier}")
-            await query.edit_message_text("❌ У вас нет прав для выполнения этой операции.")
+            await query.edit_message_text(get_text(language_code, "no_permission"))
             return
 
-        await query.edit_message_text("⏳ Начинаю перезагрузку сервера tf2-server (docker restart)...")
+        await query.edit_message_text(get_text(language_code, "server_restart"))
         try:
             # Запускаем команду перезагрузки сервера
             logger.info(f"Оператор {user_identifier} инициировал перезагрузку контейнера 'tf2-server'")
@@ -389,20 +584,20 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             if process.returncode == 0:
                 logger.info("Команда 'docker restart tf2-server' успешно выполнена.")
-                await query.edit_message_text("✅ Сервер tf2-server успешно перезагружен!")
+                await query.edit_message_text(get_text(language_code, "server_restarted"))
                 # Можно добавить небольшую паузу перед тем, как бот снова будет активно им пользоваться
                 # await asyncio.sleep(5)
             else:
                 error_msg = stderr.decode().strip() if stderr else "Неизвестная ошибка Docker"
                 logger.error(f"Ошибка при перезагрузке сервера tf2-server. Код: {process.returncode}. Ошибка: {error_msg}")
-                await query.edit_message_text(f"❌ Ошибка при перезагрузке сервера tf2-server:\n`{error_msg}`", parse_mode='Markdown')
+                await query.edit_message_text(f"{get_text(language_code, 'server_restart_error')}`{error_msg}`", parse_mode='Markdown')
 
         except FileNotFoundError:
              logger.error("Ошибка перезагрузки: команда 'docker' не найдена по пути /usr/bin/docker")
-             await query.edit_message_text("❌ Ошибка: команда 'docker' не найдена.")
+             await query.edit_message_text(get_text(language_code, "docker_not_found"))
         except Exception as e:
             logger.error(f"Непредвиденная ошибка при перезагрузке сервера: {e}", exc_info=True)
-            await query.edit_message_text("❌ Произошла непредвиденная ошибка при перезагрузке сервера.")
+            await query.edit_message_text(get_text(language_code, "restart_error"))
 
     # ==================
     #  Подтверждение оплаты
@@ -416,17 +611,16 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if not admin_chat_id:
             logger.error("ADMIN_CHAT_ID не установлен в .env! Не могу уведомить администратора.")
             await query.edit_message_text(
-                "❌ Ошибка конфигурации: не удалось уведомить администратора.\n"
-                "Пожалуйста, обратитесь в поддержку."
+                get_text(language_code, "config_error")
             )
             return
 
         try:
             admin_chat_id_int = int(admin_chat_id)
-            message_text = (f"💰 Пользователь {user_identifier} (ID: `{user_id}`) "
+            message_text = (f"{get_text(language_code, 'payment_notification')} {user_identifier} (ID: `{user_id}`) "
                             f"нажал кнопку 'Я оплатил'.\n"
-                            f"⏰ Время: {current_time_str}\n"
-                            f"Пожалуйста, проверьте оплату и активируйте/продлите аккаунт: `{marzban_username}`")
+                            f"{get_text(language_code, 'payment_time')} {current_time_str}\n"
+                            f"{get_text(language_code, 'payment_check_request')} `{marzban_username}`")
 
             await context.bot.send_message(
                 chat_id=admin_chat_id_int,
@@ -435,34 +629,31 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             logger.info(f"Уведомление об оплате от {user_identifier} успешно отправлено администратору ({admin_chat_id_int}).")
             await query.edit_message_text(
-                "✅ Ваше подтверждение отправлено администратору.\n"
-                "Ожидайте проверки и активации/продления аккаунта."
+                get_text(language_code, "payment_sent")
             )
 
         except ValueError:
             logger.error(f"Неверный формат ADMIN_CHAT_ID: '{admin_chat_id}'. Должно быть число.")
             await query.edit_message_text(
-                "❌ Ошибка конфигурации: не удалось уведомить администратора.\n"
-                "Пожалуйста, обратитесь в поддержку."
+                get_text(language_code, "config_error")
             )
         except Exception as e:
             logger.error(f"Ошибка при отправке уведомления администратору ({admin_chat_id}): {e}", exc_info=True)
             await query.edit_message_text(
-                "❌ Произошла ошибка при отправке уведомления администратору.\n"
-                "Пожалуйста, обратитесь в поддержку."
+                get_text(language_code, "admin_notification_error")
             )
 
     # ==================
     #  Меню: Мой VPN
     # ==================
     elif query.data == "menu_get_user":
-        await get_user_vpn_info(user_id, username_tg, query.edit_message_text)
+        await get_user_vpn_info(user_id, username_tg, query.edit_message_text, language_code)
 
     # ==================
     #  Меню: Получить триал
     # ==================
     elif query.data == "menu_get_trial":
-        await request_trial_common(user_id, username_tg, query.edit_message_text)
+        await request_trial_common(user_id, username_tg, query.edit_message_text, language_code)
 
     # ==================
     #  Согласие на триал
@@ -475,12 +666,12 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # Небольшая проверка, вдруг пользователь нажал дважды быстро
         if context.user_data.get(f'trial_creating_{trial_user_identifier}', False):
             logger.warning(f"Повторная попытка создания триала для {trial_user_identifier} проигнорирована.")
-            await query.answer("Запрос уже обрабатывается...", show_alert=True)
+            await query.answer(get_text(language_code, "trial_processing"), show_alert=True)
             return
         context.user_data[f'trial_creating_{trial_user_identifier}'] = True # Флаг начала создания
 
         try:
-            await query.edit_message_text(f"⏳ Создаю для вас пробный аккаунт `{marzban_username}`...", parse_mode='Markdown')
+            await query.edit_message_text(f"{get_text(language_code, 'trial_creating')} `{marzban_username}`...", parse_mode='Markdown')
             logger.info(f"Вызов marzban.create_user для '{marzban_username}' (trial=True)")
             response = marzban.create_user(marzban_username, is_trial=True)
             logger.info(f"Ответ от marzban.create_user для '{marzban_username}': {response}")
@@ -494,41 +685,39 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                      subscription_links = marzban.get_subscription_links(marzban_username, sub_url)
 
                      reply_text = (
-                         f"✅ Тестовый аккаунт `{marzban_username}` создан!\n\n"
-                         f"⏳ Он будет действовать 10 дней.\n\n"
-                         f"{format_subscription_links(subscription_links)}\n\n"
+                         f"{get_text(language_code, 'trial_created')} `{marzban_username}` создан!\n\n"
+                         f"{get_text(language_code, 'trial_duration')}"
+                         f"{format_subscription_links(subscription_links, language_code)}\n\n"
                      )
                      payment_url = subscription_links.get('payment_url')
                      if payment_url:
-                         reply_text += f"💰 Вы можете оплатить подписку в любое время:\n{payment_url}\n\n"
+                         reply_text += f"{get_text(language_code, 'payment_option')}{payment_url}\n\n"
                      else:
-                          reply_text += "Ссылка на оплату не найдена.\n\n"
+                          reply_text += f"{get_text(language_code, 'payment_link_not_found')}"
 
-                     reply_text += "💬 Если возникнут вопросы, пишите в группу @seeyoutubefree"
+                     reply_text += f"{get_text(language_code, 'trial_questions')}"
                      await query.edit_message_text(reply_text, parse_mode='Markdown')
                 else:
                      logger.error(f"Не удалось получить subscription_url после создания пользователя '{marzban_username}'. Ответ: {response}")
                      await query.edit_message_text(
-                         f"✅ Аккаунт `{marzban_username}` создан, но не удалось получить ссылки для подключения.\n"
-                         "Пожалуйста, попробуйте /get_user позже или обратитесь в поддержку.", parse_mode='Markdown'
+                         f"{get_text(language_code, 'account_created_no_links')} `{marzban_username}` {get_text(language_code, 'created_but_no_links')}", parse_mode='Markdown'
                      )
 
             elif response and isinstance(response, dict): # Если ответ есть, но не то, что ожидали
                 error_detail = response.get("detail", "Нет деталей")
                 logger.error(f"Не удалось создать триал для '{marzban_username}'. Ответ API: {response}")
                 if "already exists" in str(error_detail).lower():
-                     await query.edit_message_text(f"❌ Не удалось создать аккаунт: пользователь `{marzban_username}` уже существует.", parse_mode='Markdown')
+                     await query.edit_message_text(f"{get_text(language_code, 'trial_already_exists')} `{marzban_username}` {get_text(language_code, 'already_exists')}", parse_mode='Markdown')
                 else:
-                     await query.edit_message_text(f"❌ Не удалось создать тестовый аккаунт. Ошибка API: {error_detail}. Попробуйте позже или обратитесь в поддержку.")
+                     await query.edit_message_text(f"{get_text(language_code, 'trial_creation_error')} {error_detail}. {get_text(language_code, 'try_later')}")
             else: # Если ответ None или не словарь
                  logger.error(f"Не удалось создать триал для '{marzban_username}'. Ответ API был None или некорректный.")
-                 await query.edit_message_text("❌ Не удалось создать тестовый аккаунт. Произошла ошибка на сервере. Попробуйте позже или обратитесь в поддержку.")
+                 await query.edit_message_text(f"{get_text(language_code, 'trial_server_error')}")
 
         except Exception as e:
             logger.error(f"Ошибка при создании триала для '{marzban_username}': {e}", exc_info=True)
             await query.edit_message_text(
-                "❌ Произошла непредвиденная ошибка при создании аккаунта.\n"
-                "Пожалуйста, попробуйте позже или обратитесь в поддержку."
+                f"{get_text(language_code, 'trial_unexpected_error')}\n{get_text(language_code, 'try_later')}"
             )
         finally:
              context.user_data[f'trial_creating_{trial_user_identifier}'] = False # Снимаем флаг
@@ -537,12 +726,17 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     #  Отказ от триала
     # ==================
     elif query.data == "trial_no":
-        await query.edit_message_text("Хорошо, вы отказались от тестового периода. Если передумаете, просто нажмите кнопку снова.")
+        await query.edit_message_text(get_text(language_code, "trial_declined"))
 
 
 # Основная функция
 def main() -> None:
     logger.info("Запуск бота...")
+    logger.info(f"Переменные окружения:")
+    logger.info(f"  TELEGRAM_BOT_TOKEN: {'***' if TELEGRAM_BOT_TOKEN else 'НЕ УСТАНОВЛЕН'}")
+    logger.info(f"  SECRET: {'***' if SECRET else 'НЕ УСТАНОВЛЕН'}")
+    logger.info(f"  OPERATORS: {OPERATORS}")
+    
     try:
         application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
         logger.info("Приложение Telegram бота создано.")
@@ -559,10 +753,12 @@ def main() -> None:
 
         # Установка меню команд для удобства пользователей
         commands = [
-            ("start", "🚀 Главное меню"),
-            ("get_user", "📱 Мой VPN"),
-            ("get_trial", "🎁 Получить пробный период"),
+            ("start", get_text("en", "commands_start")),
+            ("get_user", get_text("en", "commands_get_user")),
+            ("get_trial", get_text("en", "commands_get_trial")),
         ]
+        logger.info(f"Устанавливаем команды меню: {commands}")
+        
         # Запускаем установку команд асинхронно в фоне, чтобы не блокировать старт
         # asyncio.create_task(application.bot.set_my_commands(commands))
         # --> Лучше сделать синхронно до запуска, если это возможно в вашей версии PTB
