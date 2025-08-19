@@ -13,7 +13,7 @@ import secrets
 
 # Словари с переводами
 RUSSIAN_TEXTS = {
-    "start_greeting": "Привет! Я бот для управления VPN.\n\nВыберите действие внизу страницы:\n\nНапример - /get_user для получения информации о вашей подписке\nПока сервер в режиме тестирования, потом подписка 200р/мес\n\n",
+    "start_greeting": "Привет! Я бот для управления VPN.\n\nМы обновили бот. Теперь все логины шифруются, поэтому по любым вопросам используйте контакт внизу или кнопку Проверить оплату\nВыберите действие внизу страницы:\n\n Или просто нажмите - /get_user для получения информации о вашей подписке\nПока сервер в режиме тестирования, потом подписка 200р/мес\n\n",
     "router_text": "🛜 Купить Роутер и забыть про VPN:\n",
     "support_contact": "💬 Техподдержка, оплата и контакт админа: @AP1int",
     "vpn_account_info": "ℹ️ Ваш VPN аккаунт:",
@@ -84,7 +84,7 @@ RUSSIAN_TEXTS = {
 }
 
 ENGLISH_TEXTS = {
-    "start_greeting": "Hello! I'm a VPN management bot.\n\nChoose an action below:\n\nFor example - /get_user to get information about your subscription\nWhile the server is in testing mode, then subscription 200r/month\n\n",
+    "start_greeting": "Hello! I'm a VPN management bot.\n\nWe have updated the bot. All logins are now encrypted, so for any questions, use the contact below or the Check payment button.\nChoose an action below:\n\nFor example - /get_user to get information about your subscription\nWhile the server is in testing mode, then subscription 200r/month\n\n",
     "router_text": "🛜 Buy a Router and forget about VPN:\n",
     "support_contact": "💬 Technical support, payment and admin contact: @AP1int",
     "vpn_account_info": "ℹ️ Your VPN account:",
@@ -355,7 +355,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"{start_greeting}"
         f"{router_text_final}"
         f"{support_contact}",
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        disable_web_page_preview=True
     )
 
 # Общая функция для получения информации о пользователе VPN
@@ -412,12 +413,12 @@ async def get_user_vpn_info(user_id: int, username: str = None, message_func=Non
                     else:
                          info_text += f"{get_text(language_code, 'subscription_expiring')}\n"
                     info_text += f"{get_text(language_code, 'payment_instructions')}\n"
-                    await message_func(info_text, reply_markup=reply_markup, parse_mode='Markdown')
+                    await message_func(info_text, reply_markup=reply_markup, parse_mode='Markdown', disable_web_page_preview=True)
                 else:
-                    await message_func(info_text, parse_mode='Markdown')
+                    await message_func(info_text, parse_mode='Markdown', disable_web_page_preview=True)
             else:
                  logger.warning(f"Отсутствуют 'subscription_links' в ответе для пользователя '{marzban_username}'")
-                 await message_func(info_text, parse_mode='Markdown') # Отправляем текст без ссылок
+                 await message_func(info_text, parse_mode='Markdown', disable_web_page_preview=True) # Отправляем текст без ссылок
 
         else:
             # Пользователь не найден ИЛИ Marzban вернул что-то неожиданное (None или не словарь)
@@ -429,7 +430,8 @@ async def get_user_vpn_info(user_id: int, username: str = None, message_func=Non
         # --- Логирование ошибки ---
         logger.error(f"Ошибка при выполнении get_user_vpn_info для Marzban user '{marzban_username}': {e}", exc_info=True)
         await message_func(
-            f"{get_text(language_code, 'account_error')}"
+            f"{get_text(language_code, 'account_error')}",
+            disable_web_page_preview=True
         )
 
 # Команда /get_user
@@ -437,7 +439,8 @@ async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_user:
         logger.warning("Получен /get_user от пользователя без effective_user.")
         await update.message.reply_text(
-            "❌ Ошибка: не удалось определить пользователя."
+            "❌ Ошибка: не удалось определить пользователя.",
+            disable_web_page_preview=True
         )
         return
 
@@ -489,12 +492,13 @@ async def request_trial_common(user_id: int, username: str = None, message_func=
 
                 text += f"{get_text(language_code, 'payment_confirmation')}"
                 reply_markup = InlineKeyboardMarkup(keyboard_list) if keyboard_list else None
-                await message_func(text, reply_markup=reply_markup)
+                await message_func(text, reply_markup=reply_markup, disable_web_page_preview=True)
             else:
                 # Аккаунт активен
                 logger.info(f"Аккаунт '{marzban_username}' активен.")
                 await message_func(
-                    get_text(language_code, "account_already_exists")
+                    get_text(language_code, "account_already_exists"),
+                    disable_web_page_preview=True
                 )
         else:
             # Аккаунт не существует или ошибка получения, предлагаем trial
@@ -508,13 +512,15 @@ async def request_trial_common(user_id: int, username: str = None, message_func=
             reply_markup = InlineKeyboardMarkup(keyboard)
             await message_func(
                 get_text(language_code, "trial_offer"),
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                disable_web_page_preview=True
             )
 
     except Exception as e:
         logger.error(f"Ошибка при проверке/предложении триала для '{user_identifier}': {e}", exc_info=True)
         await message_func(
-            f"{get_text(language_code, 'trial_error')}"
+            f"{get_text(language_code, 'trial_error')}",
+            disable_web_page_preview=True
         )
 
 # Функция для запроса тестового периода (вызывается из /get_user или кнопки)
@@ -525,7 +531,8 @@ async def request_trial(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not update.effective_user:
         logger.warning("Пользователь без effective_user попытался запросить триал.")
         await message_func(
-            "❌ Ошибка: не удалось определить пользователя."
+            "❌ Ошибка: не удалось определить пользователя.",
+            disable_web_page_preview=True
         )
         return
 
@@ -550,7 +557,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user = update.effective_user
     if not user:
         logger.warning("Получен callback_query от пользователя без effective_user.")
-        await query.edit_message_text("❌ Ошибка: не удалось определить пользователя.")
+        await query.edit_message_text("❌ Ошибка: не удалось определить пользователя.", disable_web_page_preview=True)
         return
         
     user_id = user.id
@@ -568,10 +575,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if query.data == "restart_server":
         if not username_tg or not is_operator(username_tg):
             logger.warning(f"Неавторизованная попытка перезагрузки сервера от {user_identifier}")
-            await query.edit_message_text(get_text(language_code, "no_permission"))
+            await query.edit_message_text(get_text(language_code, "no_permission"), disable_web_page_preview=True)
             return
 
-        await query.edit_message_text(get_text(language_code, "server_restart"))
+        await query.edit_message_text(get_text(language_code, "server_restart"), disable_web_page_preview=True)
         try:
             # Запускаем команду перезагрузки сервера
             logger.info(f"Оператор {user_identifier} инициировал перезагрузку контейнера 'tf2-server'")
@@ -584,20 +591,20 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             if process.returncode == 0:
                 logger.info("Команда 'docker restart tf2-server' успешно выполнена.")
-                await query.edit_message_text(get_text(language_code, "server_restarted"))
+                await query.edit_message_text(get_text(language_code, "server_restarted"), disable_web_page_preview=True)
                 # Можно добавить небольшую паузу перед тем, как бот снова будет активно им пользоваться
                 # await asyncio.sleep(5)
             else:
                 error_msg = stderr.decode().strip() if stderr else "Неизвестная ошибка Docker"
                 logger.error(f"Ошибка при перезагрузке сервера tf2-server. Код: {process.returncode}. Ошибка: {error_msg}")
-                await query.edit_message_text(f"{get_text(language_code, 'server_restart_error')}`{error_msg}`", parse_mode='Markdown')
+                await query.edit_message_text(f"{get_text(language_code, 'server_restart_error')}`{error_msg}`", parse_mode='Markdown', disable_web_page_preview=True)
 
         except FileNotFoundError:
              logger.error("Ошибка перезагрузки: команда 'docker' не найдена по пути /usr/bin/docker")
-             await query.edit_message_text(get_text(language_code, "docker_not_found"))
+             await query.edit_message_text(get_text(language_code, "docker_not_found"), disable_web_page_preview=True)
         except Exception as e:
             logger.error(f"Непредвиденная ошибка при перезагрузке сервера: {e}", exc_info=True)
-            await query.edit_message_text(get_text(language_code, "restart_error"))
+            await query.edit_message_text(get_text(language_code, "restart_error"), disable_web_page_preview=True)
 
     # ==================
     #  Подтверждение оплаты
@@ -611,7 +618,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if not admin_chat_id:
             logger.error("ADMIN_CHAT_ID не установлен в .env! Не могу уведомить администратора.")
             await query.edit_message_text(
-                get_text(language_code, "config_error")
+                get_text(language_code, "config_error"),
+                disable_web_page_preview=True
             )
             return
 
@@ -629,18 +637,21 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             logger.info(f"Уведомление об оплате от {user_identifier} успешно отправлено администратору ({admin_chat_id_int}).")
             await query.edit_message_text(
-                get_text(language_code, "payment_sent")
+                get_text(language_code, "payment_sent"),
+                disable_web_page_preview=True
             )
 
         except ValueError:
             logger.error(f"Неверный формат ADMIN_CHAT_ID: '{admin_chat_id}'. Должно быть число.")
             await query.edit_message_text(
-                get_text(language_code, "config_error")
+                get_text(language_code, "config_error"),
+                disable_web_page_preview=True
             )
         except Exception as e:
             logger.error(f"Ошибка при отправке уведомления администратору ({admin_chat_id}): {e}", exc_info=True)
             await query.edit_message_text(
-                get_text(language_code, "admin_notification_error")
+                get_text(language_code, "admin_notification_error"),
+                disable_web_page_preview=True
             )
 
     # ==================
@@ -671,7 +682,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data[f'trial_creating_{trial_user_identifier}'] = True # Флаг начала создания
 
         try:
-            await query.edit_message_text(f"{get_text(language_code, 'trial_creating')} `{marzban_username}`...", parse_mode='Markdown')
+            await query.edit_message_text(f"{get_text(language_code, 'trial_creating')} `{marzban_username}`...", parse_mode='Markdown', disable_web_page_preview=True)
             logger.info(f"Вызов marzban.create_user для '{marzban_username}' (trial=True)")
             response = marzban.create_user(marzban_username, is_trial=True)
             logger.info(f"Ответ от marzban.create_user для '{marzban_username}': {response}")
@@ -696,28 +707,29 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                           reply_text += f"{get_text(language_code, 'payment_link_not_found')}"
 
                      reply_text += f"{get_text(language_code, 'trial_questions')}"
-                     await query.edit_message_text(reply_text, parse_mode='Markdown')
+                     await query.edit_message_text(reply_text, parse_mode='Markdown', disable_web_page_preview=True)
                 else:
                      logger.error(f"Не удалось получить subscription_url после создания пользователя '{marzban_username}'. Ответ: {response}")
                      await query.edit_message_text(
-                         f"{get_text(language_code, 'account_created_no_links')} `{marzban_username}` {get_text(language_code, 'created_but_no_links')}", parse_mode='Markdown'
+                         f"{get_text(language_code, 'account_created_no_links')} `{marzban_username}` {get_text(language_code, 'created_but_no_links')}", parse_mode='Markdown', disable_web_page_preview=True
                      )
 
             elif response and isinstance(response, dict): # Если ответ есть, но не то, что ожидали
                 error_detail = response.get("detail", "Нет деталей")
                 logger.error(f"Не удалось создать триал для '{marzban_username}'. Ответ API: {response}")
                 if "already exists" in str(error_detail).lower():
-                     await query.edit_message_text(f"{get_text(language_code, 'trial_already_exists')} `{marzban_username}` {get_text(language_code, 'already_exists')}", parse_mode='Markdown')
+                     await query.edit_message_text(f"{get_text(language_code, 'trial_already_exists')} `{marzban_username}` {get_text(language_code, 'already_exists')}", parse_mode='Markdown', disable_web_page_preview=True)
                 else:
-                     await query.edit_message_text(f"{get_text(language_code, 'trial_creation_error')} {error_detail}. {get_text(language_code, 'try_later')}")
+                     await query.edit_message_text(f"{get_text(language_code, 'trial_creation_error')} {error_detail}. {get_text(language_code, 'try_later')}", disable_web_page_preview=True)
             else: # Если ответ None или не словарь
                  logger.error(f"Не удалось создать триал для '{marzban_username}'. Ответ API был None или некорректный.")
-                 await query.edit_message_text(f"{get_text(language_code, 'trial_server_error')}")
+                 await query.edit_message_text(f"{get_text(language_code, 'trial_server_error')}", disable_web_page_preview=True)
 
         except Exception as e:
             logger.error(f"Ошибка при создании триала для '{marzban_username}': {e}", exc_info=True)
             await query.edit_message_text(
-                f"{get_text(language_code, 'trial_unexpected_error')}\n{get_text(language_code, 'try_later')}"
+                f"{get_text(language_code, 'trial_unexpected_error')}\n{get_text(language_code, 'try_later')}",
+                disable_web_page_preview=True
             )
         finally:
              context.user_data[f'trial_creating_{trial_user_identifier}'] = False # Снимаем флаг
@@ -726,7 +738,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     #  Отказ от триала
     # ==================
     elif query.data == "trial_no":
-        await query.edit_message_text(get_text(language_code, "trial_declined"))
+        await query.edit_message_text(get_text(language_code, "trial_declined"), disable_web_page_preview=True)
 
 
 # Основная функция
